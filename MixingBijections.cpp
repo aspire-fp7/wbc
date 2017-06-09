@@ -9,10 +9,16 @@
 
 #include "MixingBijections.h"
 #include <iostream>
-NTL_CLIENT
 
 using namespace std;
+
+#ifdef FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO
+
+NTL_CLIENT
+
 using namespace NTL;
+
+
 /**
  * Generates random matrix of dimension pxp that is invertible in GF(2)
  */
@@ -471,3 +477,4 @@ int generateRandomBijection(vec_GF2X& bijection, vec_GF2X& inverse, int size, in
 int generateRandomBijection(unsigned char *bijection, unsigned char *inverse, int size, int init){
 	return generateRandomBijectionT(bijection, inverse, size, init);
 }
+#endif /* FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO */

@@ -15,12 +15,16 @@
 #include <cstdlib>
 #include <ctime>
 #include <iomanip>
+#include <vector>
+#include <string>
 
+#ifdef FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO
 // Enable NTL library here
 NTL_CLIENT
+using namespace NTL;
+#endif /* FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO */
 
 using namespace std;
-using namespace NTL;
 
 int WBAESGenerator::shiftRowsLBijection[N_BYTES] = {
 		0, 13, 10, 7,
@@ -254,6 +258,7 @@ void WBAESGenerator::generateCodingMap(WBACR_AES_CODING_MAP* map, int *codingCou
 	*codingCount = cIdx+1;
 }
 
+#ifdef FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO
 int WBAESGenerator::generateMixingBijections(
 		MB08x08_TABLE L08x08[][MB_CNT_08x08_PER_ROUND], int L08x08rounds,
 		MB32x32_TABLE MB32x32[][MB_CNT_32x32_PER_ROUND], int MB32x32rounds,
@@ -1029,13 +1034,74 @@ int WBAESGenerator::testComputedVectors(bool coutOutput, WBAES * genAES, ExtEnco
 	return err;
 }
 
+template<typename T>
+void DumpTable(std::ofstream& ofs, T* t, size_t length) {
+    ofs << "{ ";
+
+    for (size_t i = 0; i < length; i++) {
+        if (i > 0)
+            ofs << ",";
+        ofs << "0x" << hex << static_cast<int>(t[i]) << " ";
+    }
+
+    ofs << "}";
+}
+
+size_t TotalArraySize(const std::vector<size_t> sizes) {
+    size_t size = 1;
+    for (auto s: sizes)
+        size *= s; /* ! */
+    return size;
+}
+
+template<typename T>
+void DumpNDimTable(std::ofstream& ofs, T t[], std::vector<size_t> sizes /* rightmost entry = 'left'most (i.e., first to dereference)*/) {
+    DumpTable(ofs, t, TotalArraySize(sizes));
+}
+
+/* typedef BITS4 XTB[256];
+   typedef XTB    W32XTB[8];
+   typedef union _W128B{
+   typedef W128b ( BYTE[16] ) AES_TB_TYPE1[256];
+   typedef W32b ( BYTE[4] ) AES_TB_TYPE2[256];
+   typedef W32b ( BYTE[4] ) AES_TB_TYPE3[256];
+*/
+
+void DumpWBAES(std::ofstream& ofs, WBAES* aes) {
+    ofs << " { /* W32XTB dXTab[N_ROUNDS][N_SECTIONS][N_XOR_GROUPS]: */ " << endl;
+    DumpNDimTable<unsigned char>(ofs, reinterpret_cast<unsigned char*>(aes->dXTab), { 256, 8, N_XOR_GROUPS, N_SECTIONS, N_ROUNDS });
+    ofs << ", /* W32XTB dXTabEx[2][15][4]: */" << endl;
+    DumpNDimTable<unsigned char>(ofs, reinterpret_cast<unsigned char*>(aes->dXTabEx), { 256, 8, 4, 15, 2 });
+    ofs << ", /* AES_TB_TYPE1 dTab1[2][N_BYTES]: */" << endl;
+    DumpNDimTable<unsigned char>(ofs, reinterpret_cast<unsigned char*>(aes->dTab1), { 16, 256, N_BYTES, 2 });
+    ofs << ", /* AES_TB_TYPE2 dTab2[N_ROUNDS][N_BYTES]: */" << endl;
+    DumpNDimTable<unsigned char>(ofs, reinterpret_cast<unsigned char*>(aes->dTab2), { 4, 256, N_BYTES, N_ROUNDS });
+    ofs << ", /* AES_TB_TYPE3 dTab3[N_ROUNDS][N_BYTES]: */" << endl;
+    DumpNDimTable<unsigned char>(ofs, reinterpret_cast<unsigned char*>(aes->dTab3), { 4, 256, N_BYTES, N_ROUNDS });
+    ofs << " }";
+}
+
 int WBAESGenerator::save(const char * filename, WBAES * aes, ExtEncoding * extCoding){
 #ifdef WBAES_BOOST_SERIALIZATION
-	std::ofstream ofs(filename);
-	int code = save(ofs, aes, extCoding);
-	ofs.close();
+        std::ofstream ofs_header(string(filename) + ".h");
 
-	return code;
+        // Dump Table:
+        // TODO: I actually had to disable ext encoding because of the NTL matrices!
+#if 0
+        ofs << "ExtEncoding ext = /* TODO: I actually had to disable ext encoding because of the NTL matrices! */" << endl;
+        DumpExtEncoding(ofs, extCoding);
+        ofs << endl << ";" << endl;
+#endif
+        /* Dump WBAES: */
+        ofs_header << "WBAES wbaes = ";
+        DumpWBAES(ofs_header, aes);
+        ofs_header << ";" << endl;
+
+        std::ofstream ofs_binary(string(filename) + ".binary");
+        int code = save(ofs_binary, aes, extCoding);
+        ofs_binary.close();
+
+        return code;
 #else
 	cerr << "WBAESGenerator::save: Boost is not enabled, use WBAES_BOOST_SERIALIZATION" << endl;
 	return -1;
@@ -1087,3 +1153,5 @@ int WBAESGenerator::load(istream& ins, WBAES * aes, ExtEncoding * extCoding){
 	return -1;
 #endif
 }
+
+#endif /* FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO */

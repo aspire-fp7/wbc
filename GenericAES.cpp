@@ -560,6 +560,8 @@ int GenericAES::testMixColumn(){
 	return 1;
 }
 
+#ifdef FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO
+
 void GenericAES::generateA1A2Relations(vec_GF2E& A1, vec_GF2E& A2){
 	generateA1A2Relations(A1, A2, (phrand() % 255) + 1, phrand() % 8);
 }
@@ -617,6 +619,7 @@ void GenericAES::generateA1A2Relations(vec_GF2E& A1, vec_GF2E& A2, int a, int q)
 		A2.put(i, tmpElem);
 	}
 }
+#endif /* FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO */
 
 mat_GF2 GenericAES::makeMultAMatrix(int a){
 	restoreModulus();

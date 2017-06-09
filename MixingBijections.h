@@ -11,6 +11,8 @@
 #define MIXINGBIJECTIONS_H_
 
 #include "base.h"
+
+#ifdef FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO
 #include <NTL/GF2.h>
 #include <NTL/GF2X.h>
 #include <NTL/vec_GF2.h>
@@ -18,6 +20,8 @@
 #include <NTL/GF2EX.h>
 #include <NTL/mat_GF2.h>
 #include <NTL/vec_long.h>
+#endif /* FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO */
+
 #include <math.h>
 #include <vector>
 #include "NTLUtils.h"
@@ -27,10 +31,12 @@
 // block matrix default size
 #define QSIZE 4
 
+#ifdef FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO
 /**
  * Generates random matrix of dimension pxp that is invertible in GF(2)
  */
 long generateInvertiblePM(mat_GF2& M, int p);
+
 void AddToCol(mat_GF2& x, long j, const vec_GF2& a);
 
 /**
@@ -123,5 +129,8 @@ template<typename T> int generateRandomBijectionT(T * bijection, T * inverse, in
 
 	return 0;
 }
+
+#endif /* FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO */
+
 
 #endif /* MIXINGBIJECTIONS_H_ */

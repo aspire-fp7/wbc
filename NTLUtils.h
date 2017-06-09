@@ -12,6 +12,8 @@
 
 // NTL dependencies
 #include "base.h"
+
+#ifdef FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO
 #include <NTL/vector.h>
 #include <NTL/GF2.h>
 #include <NTL/GF2X.h>
@@ -21,20 +23,32 @@
 #include <NTL/vec_GF2E.h>
 #include <NTL/mat_GF2.h>
 #include <NTL/mat_GF2E.h>
+#endif /* FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO */
+
 #include <math.h>
 #include <assert.h>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <string>
+
+#ifdef FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO
 #include <boost/io/ios_state.hpp>
+#endif /* FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO */
+
 #include "md5.h"
+
+#ifdef FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO
 NTL_CLIENT
+#endif /* FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO */
+
 
 
 #define CHEX8(x) "0x" << setw(8) << setfill('0') << hex << ((unsigned long int)x)
 #define CHEX(x) "0x" << setw(2) << setfill('0') << hex << ((unsigned long int)x)
 #define GF2EHEX(x) "0x" << setw(2) << setfill('0') << hex << (getLong(x))
+
+#ifdef FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO
 
 /**
  * Init GF2 polynomial from long.
@@ -236,6 +250,7 @@ int initMatrix(mat_GF2& M, long *data);
 size_t hex2bin(const char* src, char* target, size_t maxLen);
 size_t hexstr2bin(std::string hex, char * target, size_t maxLen);
 
+
 /**
  * Hashes input string with MD5 hash
  */
@@ -255,5 +270,7 @@ public:
 template <class T> vector_inserter<T>& operator+=(NTL::Vec<T>& v,const T& x){
     return vector_inserter<T>(v),x;
 }
+#endif /* FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO */
+
 
 #endif /* NTLUTILS_H_ */

@@ -12,14 +12,15 @@
 #include "base.h"
 #include "NTLUtils.h"
 #include <iomanip>
-
-#define WBAES_BOOST_SERIALIZATION 1
-// BOOST serialization
-#ifdef WBAES_BOOST_SERIALIZATION
-#include <cstddef> // NULL
 #include <iostream>
 #include <fstream>
 #include <string>
+
+
+// #define WBAES_BOOST_SERIALIZATION 1
+// BOOST serialization
+#ifdef WBAES_BOOST_SERIALIZATION
+#include <cstddef> // NULL
 #include <boost/archive/tmpdir.hpp>
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/text_oarchive.hpp>
@@ -217,6 +218,8 @@ inline void op8xor_128(const W128b& o1, const W128b& o2, const W32XTB * xtb, W12
     OP8XOR_128(o1, o2, xtb, res);
 }
 
+#ifdef FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO
+
 inline void dumpW128b(W128b& a){
 	int i;
 	for(i=0; i<16; i++){
@@ -233,6 +236,8 @@ inline void dumpW32b(W32b& a){
 	std::cout << std::endl;
 }
 
+#endif /* FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO */
+
 // Reads character vector to W128b, by columns - required format for encryption input
 void arr_to_W128b(unsigned char * src, size_t offset, W128b& dst);
 void arr_to_W128b(char * src, size_t offset, W128b& dst);
@@ -241,8 +246,10 @@ bool compare_W128b(const W128b& src, const W128b& dst);
 
 class WBAES {
 public:
+#ifdef FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO
 	WBAES();
 	virtual ~WBAES();
+#endif /* FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO */
 
 #ifdef WBAES_BOOST_SERIALIZATION
 	friend class boost::serialization::access;
@@ -268,8 +275,8 @@ public:
 	
 	int save(const char * filename);
 	int load(const char * filename);
-    int save(ostream& out);
-    int load(istream& ins);
+    int save(std::ostream& out);
+    int load(std::istream& ins);
 #ifdef WBAES_BOOST_SERIALIZATION
     int save(boost::archive::binary_oarchive& out);
     int load(boost::archive::binary_iarchive& ins);
@@ -298,7 +305,7 @@ public:
 	//
 	const static int shiftRowsInv[N_BYTES];
 
-		
+#ifdef FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO
 	// XOR tables
     W32XTB eXTab[N_ROUNDS][N_SECTIONS][N_XOR_GROUPS];
 
@@ -313,12 +320,15 @@ public:
     
     // Type III tables
     AES_TB_TYPE3 eTab3[N_ROUNDS][N_BYTES];
-    
+#endif /* FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO */
+
     // universal encryption/decryption method
     void encdec(W128b& state, bool encrypt);
 
+#ifdef FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO
     // pure table implementation of encryption of given state
     void encrypt(W128b& state);
+#endif /* FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO */
 
     // pure table implementation of decryption of given state
     void decrypt(W128b& state);
@@ -363,7 +373,9 @@ public:
     	GF256_func_t dOutputBijection[N_ROUNDS][N_BYTES];
 #endif
 
+#ifdef FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO
     bool dumpEachRound;
+#endif /* FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO */
 };
 
 #ifdef WBAES_BOOST_SERIALIZATION

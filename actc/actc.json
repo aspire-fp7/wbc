@@ -1,0 +1,352 @@
+// ACTC 2.8.0
+//
+// Note:
+// - "excluded": true/false [false]
+//   if true, step is excluded from toolchain --> no output folder is created
+//   use this field to start toolchain from any step
+//
+// - "traverse": true/false [false]
+//   if true, input files are copied to output folder without any change
+//
+{
+
+  // Target platforms:
+  // - linux [default]
+  // - android
+  "platform" :                "linux",
+
+  // Tools
+  "tools": {
+    // libraries
+    "third_party":            "/opt/3rd_party",
+    // src2src
+    "annotation_reader":      ["NOT_HERE"],
+    "config":                 "NOT_HERE",
+    "wbta":                   ["NOT_HERE"],
+    "convert_pragmas":        ["NOT_HERE"],
+    "wbc":                    "NOT_HERE",
+    "wbc_public":             "/projects/wbc/main",
+    "read_annot":             "/opt/annotation_extractor/readAnnot.sh",
+    "data_obfuscate":         "NOT_HERE",
+    "client_server_splitter": "NOT_HERE",
+    "csurf":                  "NOT_HERE",
+    "codeguard":              "/opt/codeguard/codeguard.py",
+    "anti_cloning":           "NOT_HERE",
+    "attestator_selector":    "/opt/RA/attestator_selector.sh",
+    "reaction_unit":          "NOT_HERE",
+    "dcl":                    "NOT_HERE",
+    "cft":                    "NOT_HERE",
+    // src2bin
+    "frontend":               "/opt/diablo-gcc-toolchain/bin/arm-diablo-linux-gnueabi-g++",
+    // bin2bin
+    "extractor":              "NOT_HERE",
+    "xtranslator":            "NOT_HERE",
+    "code_mobility":          "/opt/code_mobility",
+    "accl":                   "/opt/ACCL",
+    "ascl":                   "/opt/ASCL",
+    "anti_debugging":         "NOT_HERE_YET",
+    "obfuscator":             "/opt/diablo/diablo-obfuscator",
+    "obfuscator_sp":          "/opt/diablo/diablo-selfprofiling",
+    "renewability":           "/opt/renewability"
+  },
+
+  // Source-level Tool chain
+  "src2src": {
+    "excluded": false,
+
+    // Source code annotation
+    "SLP01": {
+      "excluded":               false,
+      "traverse":               false,
+      "annotations_patch":      "",
+      "external_annotations":   "",
+      "source"  :               ["../MixingBijections.cpp",
+    "../MixingBijections.h",
+    "../NTLUtils.cpp",
+    "../NTLUtils.h",
+    "../WBAES.cpp",
+    "../WBAES.h",
+    "../WBAESGenerator.cpp",
+    "../WBAESGenerator.h",
+    "../WBTables.h",
+    "../decrypt-only.cpp",
+    "../decrypt-fn.cpp"]
+    },
+
+    // white-box crypto
+    "SLP03": {
+      "excluded": false,
+      "traverse": true
+    },
+
+    // preprocessor
+    "SLP02": {
+      "excluded": false
+    },
+
+    // data hiding
+    "SLP05": {
+      "excluded": false,
+      "traverse": true
+    },
+
+    // client server clode splitting
+    "SLP06": {
+      "excluded": false,
+      "traverse": true
+    },
+    
+    // annotation extraction + external annotation file(s)
+    "SLP04": {
+      "excluded": false,
+      "options" : [],
+      "external": ["external.json"]
+    },
+
+    // code guard
+    "SLP08": {
+      "excluded": false,
+      "traverse": true,
+      "options" : []
+    },
+
+    // anti-cloning
+    "SLP09": {
+      "excluded": false,
+      "traverse": true,
+      "options" : []
+    },
+
+    // remote attestation
+    "SLP07": {
+      "excluded": true,
+      "options" : []
+    },
+
+    // reaction unit
+    "SLP10": {
+      "excluded": false,
+      "traverse": true,
+      "options" : []
+    },
+
+    // diversified crypto library
+    "SLP11": {
+      "excluded": false,
+      "traverse": true,
+      "options" : []
+    },
+
+    // control flow tagging
+    "SLP12": {
+      "excluded": false,
+      "traverse": true,
+      "options" : []
+    }
+  },
+
+  // Assembler, Compiler, Linker
+  "src2bin": {
+  "excluded": false,
+    // Common options for all tools
+    "options"      : [],
+
+    "PREPROCESS": {
+      // -I <dir>
+      // -isystem <dir>
+      // -include <file>
+      // -D<macro[=defn]>
+      "options"    : ["-D_FILE_OFFSET_BITS=64",
+                      "-I..",
+                      "-I/opt/3rd_party/openssl/prebuilt/linux/include",
+                      "-DAPPLY_RENEWABILITY"]
+    },
+
+    // .c, .cpp
+    "COMPILE": {
+      "options"    : ["-O0",
+                      "-Wall",
+                      "-Wno-unused-function",
+                      "-Wno-unused-parameter",
+                      "-Wshadow",
+                      "-Wsign-compare",
+                      "-Wunknown-pragmas",
+                      "-fPIC",
+                      "-fno-aggressive-loop-optimizations",
+                      "-fno-stack-protector",
+                      "-fno-strict-aliasing",
+                      "-fomit-frame-pointer",
+                      "-g",
+                      "-marm",
+                      "-mcpu=cortex-a8",
+                      "-msoft-float",
+                      "-I/opt/3rd_party/openssl/prebuilt/linux/include",
+                      "-std=c++0x"],
+      "options_c"  : [],
+      "options_cpp": []
+    },
+
+    // accl.c
+    "COMPILE_ACCL": {
+      "protocol"    : "http",
+      "endpoint"    : "172.18.20.157",
+      "port"        : "8088",
+      "file_path"   : ""
+    },
+
+    // Linker
+    "LINK": {
+      "options"    : ["-Os",
+                      "-Wl,--fix-cortex-a8",
+                      "-Wl,--hash-style=sysv",
+                      "-Wl,--no-demangle",
+                      "-Wl,--no-merge-exidx-entries",
+                      "-Wl,--no-undefined",
+                      "-fPIC",
+                      "-g",
+                      "-lc",
+                      "-marm",
+                      "-mcpu=cortex-a8",
+                      "-msoft-float",
+                      "/opt/3rd_party/openssl/prebuilt/linux/lib/libcrypto.a"],
+      // basename of linked file
+      //   if empty, default value computed from options:
+      //   "liba.so" if "-shared" else "a.out"
+      "binary"     : "wbc"
+    }
+  },
+
+  // Binary Rewriting Tool Chain
+  "bin2bin": {
+    "excluded": false,
+
+    // bytecode diversity seed, integer or RANDOM
+    "bytecode_diversity_seed"     : "0",
+    "code_mobility_diversity_seed": "0",
+
+    // vanilla self-profiling
+    "BLP00": {
+      "excluded": true,
+    
+
+      // generate vanilla self-profiling binary
+      "_01": {
+        "excluded": false,
+        "options" : []
+      },
+    
+      // collect execution profile on target board
+      "_02": {
+        "excluded": false,
+        "script" : "/projects/actc-demos/bzip2-1.0.6/actc/create_profile_on_board.sh"
+      },
+    
+      // recompile using execution profile and calculate dynamic metrics
+      "_03": {
+        "excluded": false,
+        "options" : []
+      }
+    },
+    
+    // Native Code Extraction
+    "BLP01": {
+      "excluded": false,
+      "traverse": false,
+      "options" : []
+    },
+
+    // Bytecode Generation
+    "BLP02": {
+      "excluded": true,
+      "options" : ["--new-VM"]
+    },
+
+    // Code Integration
+    "BLP03": {
+      "excluded": false,
+      "options" : []
+    },
+
+    // Binary Code Control Flow Obfuscation
+    "BLP04": {
+      "excluded"        : false,
+      "options"         : ["--dump-transformations on",
+                   "--log-transformations on",
+                   "-D"],
+      "self-profiling"  : false,
+      "runtime_profiles": false,
+      "anti_debugging"  : false,
+      "obfuscations"    : false,
+      "call_stack_check": false,
+      "softvm"          : false,
+      "code_mobility"   : true
+    },
+
+    // Generate dynamic metrics using diablo obfuscator
+    "BLP04_DYN": {
+      "excluded": true,
+
+      // collect execution profile on target board
+      "_01": {
+        "excluded": false,
+        "options" : "",
+        "script" : "/projects/actc-demos/bzip2-1.0.6/actc/create_profile_on_board.sh"
+      },
+    
+      // recompile using execution profile and calculate dynamic metrics
+      "_02": {
+        "excluded": true,
+        "options" : ""
+      }
+    }
+  },
+    
+  // Server side management
+  "SERVER": {
+    "excluded"   : false,
+    "ip_address" : "172.18.20.157",
+
+    // Code Splitting
+    "P10": {
+      "script": "/opt/client_server_splitter/server-deploy.sh"},
+
+    // Code Mobility
+    "P20": {
+      "script": "/opt/code_mobility/deploy_application.sh"},
+
+    // Remote Attestation
+    "P80": {
+      "script": "/opt/RA/deploy/deploy.sh"},
+
+    // Renewability
+    "RENEWABILITY": {
+      "excluded"              : false,
+      "new_application_script": "/opt/renewability/scripts/create_new_application.sh",
+      "set_policy_script"     : "/opt/renewability/scripts/set_application_policy.sh",
+      "revision_duration"     : "5",
+      "timeout_mandatory"     : false
+    }
+  },
+
+  // Metric collection
+  "METRICS": {
+    "excluded" : false,
+    "files"    : {
+        "BC02_SP"          : ["*.stat_complexity_info"],
+        "BC02_SP/profiles" : ["*.plaintext"],
+        "BC02_DYN"         : ["*.dynamic_complexity_info"],
+        "BC05"             : ["*.stat_complexity_info",
+                           "*.stat_regions_complexity_info"],
+        "BC05/profiles"    : ["*.plaintext"],
+        "BC05_DYN"         : ["*.dynamic_complexity_info"]
+    }
+  },
+
+  // Post-processing
+  "POST": {
+    // Short description in ACTC trace
+    "brief": "",
+    // Command line arguments
+    "args" : ""
+  }
+}

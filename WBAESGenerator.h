@@ -14,6 +14,8 @@
 #include <assert.h>
 #include <string.h>
 
+#ifdef FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO
+
 #include <NTL/GF2.h>
 #include <NTL/GF2X.h>
 #include <NTL/vec_GF2.h>
@@ -21,6 +23,8 @@
 #include <NTL/GF2EX.h>
 #include <NTL/mat_GF2.h>
 #include <NTL/vec_long.h>
+#endif /* FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO */
+
 #include <math.h>
 #include <vector>
 #include "NTLUtils.h"
@@ -145,6 +149,8 @@ typedef struct _CODING8X8_TABLE_EX {
     }
 } CODING8X8_TABLE_EX;
 
+#ifdef FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO
+
 //
 //  Mixing bijection (linear transformation represented as GF(2) matrix)
 //
@@ -162,6 +168,8 @@ typedef MB_TABLE MB08x08_TABLE;
 typedef MB_TABLE MB32x32_TABLE;
 typedef MB_TABLE MB128x128_TABLE;
 
+#endif /* FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO */
+
 //
 // Coding for T2 and T3 boxes, 8bit -> 32bit
 //
@@ -178,6 +186,8 @@ typedef struct _W08x128Coding {
     HIGHLOW OC[16];
 } W08x128Coding;
 
+#ifdef FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO
+
 //
 // Input/Output encoding. It is specification for T1 tables for apps using WBAES.
 //
@@ -185,6 +195,12 @@ typedef struct _ExtEncoding {
 	CODING4X4_TABLE lfC[2][2*N_BYTES];		// 0=>first input round bijection, 1=>last output round bijection
 	MB128x128_TABLE IODM[2];                // 128 x 128 GF(2) matrix, input, output mixing bijection
 } ExtEncoding;
+
+#else  /* FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO */
+
+typedef void* ExtEncoding;
+
+#endif /* FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO */
 
 #define WBAESGEN_EXTGEN_fCID 1          // lfC[0]  in ExtEncoding will be identity
 #define WBAESGEN_EXTGEN_lCID 2          // lfC[1]  in ExtEncoding will be identity
@@ -442,8 +458,10 @@ public:
     //
     // If all initialized to default AES, you will get default WBAES, otherwise
     // you will get cipher using dual AES - should raise known attack to high complexities.
+#ifdef FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO
     GenericAES AESCipher[N_ROUNDS * N_SECTIONS];
     inline GenericAES& getAESCipher(int idx){ return this->AESCipher[idx]; };
+#endif /* FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO */
 
     // use given protection or not?
     bool useDualAESARelationsIdentity;
@@ -454,6 +472,7 @@ public:
     bool useMB08x08Identity;
     bool useMB32x32Identity;
 
+#ifdef FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO
     //
     // Mixing bijections
     // Round 2..10, 16x 08x08 MB (L)
@@ -461,6 +480,7 @@ public:
     //
     MB08x08_TABLE MB_L08x08 [MB_CNT_08x08_ROUNDS][MB_CNT_08x08_PER_ROUND];
     MB32x32_TABLE MB_MB32x32[MB_CNT_32x32_ROUNDS][MB_CNT_32x32_PER_ROUND];
+#endif /* FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO */
 
     //
     // Input output coding - for each byte of state array.
@@ -498,6 +518,7 @@ public:
     //
     void generateCodingMap(WBACR_AES_CODING_MAP* pCodingMap, int *codingCount, bool encrypt);
 
+#ifdef FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO
 	//
 	// Generate random mixing bijections and their inverses
 	// Initializes:
@@ -520,10 +541,13 @@ public:
 	//
 	// Helper method, generates only T1 tables from external encoding
 	void generateT1Tables(WBAES * genAES, ExtEncoding * extc, bool encrypt);
+#endif /* FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO */
 
 	//
 	// Helper method, generates XOR table
 	void generateXorTable(CODING * xorCoding, XTB * xtb);
+
+#ifdef FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO
 
 	//
 	// Applies external encoding - after this, state can be passed to WB AES using this external encoding
@@ -539,6 +563,7 @@ public:
 	// test whitebox implementation with test vectors
 	int testWithVectors(bool coutOutput, WBAES * genAES);
 	int testComputedVectors(bool coutOutput, WBAES * genAES, ExtEncoding * extc);
+
 
 	inline void BYTEArr_to_vec_GF2E(const BYTE * arr, size_t len, NTL::vec_GF2E& dst){
 		charArr_to_vec_GF2E(arr, len, dst);
@@ -625,11 +650,13 @@ public:
 			}
 		}
 	}
+#endif /* FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO */
+
 
 	int save(const char * filename, WBAES * aes, ExtEncoding * extCoding);
 	int load(const char * filename, WBAES * aes, ExtEncoding * extCoding);
-	int save(ostream& out, WBAES * aes, ExtEncoding * extCoding);
-	int load(istream& ins, WBAES * aes, ExtEncoding * extCoding);
+	int save(std::ostream& out, WBAES * aes, ExtEncoding * extCoding);
+	int load(std::istream& ins, WBAES * aes, ExtEncoding * extCoding);
 };
 
 #ifdef WBAES_BOOST_SERIALIZATION

@@ -18,8 +18,12 @@
 #include "WBAES.h"
 #include "NTLUtils.h"
 #include <iomanip>
-NTL_CLIENT
 
+#ifdef FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO
+NTL_CLIENT
+#endif /* FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO */
+
+using namespace std;
 
 // Shift rows selector
 const int WBAES::shiftRows[N_BYTES] = {
@@ -66,6 +70,8 @@ bool compare_W128b(const W128b& src, const W128b& dst){
 	return true;
 }
 
+#ifdef FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO
+
 WBAES::WBAES() {
 	dumpEachRound = false;
 }
@@ -77,6 +83,8 @@ WBAES::~WBAES() {
 void WBAES::encrypt(W128b& state){
 	encdec(state, true);
 }
+
+#endif /* FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO */
 
 void WBAES::decrypt(W128b& state){
 	encdec(state, false);
@@ -90,6 +98,9 @@ void WBAES::encdec(W128b& state, bool encrypt){
 	W128b ares[N_BYTES];				// intermediate result for T1-boxes
 
 	// encryption/decryption dependent operations and tables
+
+#ifdef FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO
+
 	const int (&shiftOp)[N_BYTES]                        = encrypt ? (this->shiftRows) : (this->shiftRowsInv);
 	W32XTB (&edXTab)[N_ROUNDS][N_SECTIONS][N_XOR_GROUPS] = encrypt ? (this->eXTab)     : (this->dXTab);
 	W32XTB (&edXTabEx)[2][15][4]                         = encrypt ? (this->eXTabEx)   : (this->dXTabEx);
@@ -99,6 +110,17 @@ void WBAES::encdec(W128b& state, bool encrypt){
 #ifdef AES_BGE_ATTACK
 	GF256_func_t (&edOutputBijection)[N_ROUNDS][N_BYTES] = encrypt ? (this->eOutputBijection) : (this->dOutputBijection);
 #endif
+
+#else /* FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO */
+        const int (&shiftOp)[N_BYTES]                        = this->shiftRowsInv; /* TODO only dump these! */
+        W32XTB (&edXTab)[N_ROUNDS][N_SECTIONS][N_XOR_GROUPS] = this->dXTab;
+        W32XTB (&edXTabEx)[2][15][4]                         = this->dXTabEx;
+        AES_TB_TYPE1 (&edTab1)[2][N_BYTES]                   = this->dTab1;
+        AES_TB_TYPE2 (&edTab2)[N_ROUNDS][N_BYTES]            = this->dTab2;
+        AES_TB_TYPE3 (&edTab3)[N_ROUNDS][N_BYTES]            = this->dTab3;
+
+#endif /* FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO */
+
 
 	// At first we have to put input to T1 boxes directly, no shift rows
 	// compute result to ares[16]
@@ -213,10 +235,13 @@ void WBAES::encdec(W128b& state, bool encrypt){
 		}
 #endif
 
+#ifdef FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO
 		if (dumpEachRound){
 			cout << "EndOfRound[" << r << "] dump: " << endl;
 			dumpW128b(state);
 		}
+#endif /* FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO */
+
 	}
 
 	//
@@ -264,10 +289,12 @@ void WBAES::encdec(W128b& state, bool encrypt){
 	}
 #endif
 
+#ifdef FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO
 	if (dumpEachRound){
 		cout << "EndOfRound[" << r << "] dump: " << endl;
 		dumpW128b(state);
 	}
+#endif /* FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO */
 }
 
 int WBAES::save(const char * filename){
@@ -326,7 +353,7 @@ std::string WBAES::save() {
 	return out.str();
 #else
 	cerr << "WBAES::save: Boost is not enabled, use WBAES_BOOST_SERIALIZATION" << endl;
-	return -1;
+	return "";
 #endif
 }
 

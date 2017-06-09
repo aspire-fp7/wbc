@@ -16,6 +16,7 @@
 #include <cstdlib>
 #include <ctime>
 
+#ifdef FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO
 // NTL dependencies
 #include <NTL/GF2.h>
 #include <NTL/GF2X.h>
@@ -28,6 +29,8 @@
 #include <NTL/vec_GF2E.h>
 #include <NTL/vec_long.h>
 #include <NTL/new.h>
+#endif /* FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO */
+
 #include <math.h>
 #include <assert.h>
 #include "base.h"
@@ -54,7 +57,9 @@ enum keySize {
 	KEY_SIZE_32 = 32
 };
 
+#ifdef FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO
 NTL_CLIENT
+
 class GenericAES {
 public:
 	/**
@@ -413,5 +418,6 @@ private:
       */
      long sbox[AES_FIELD_SIZE];
 };
+#endif /* FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO */
 
 #endif /* GENERICAES_H_ */

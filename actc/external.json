@@ -1,0 +1,7 @@
+[
+{
+ "annotation type":"code",
+ "function name":"_Z10decrypt_fnR6_W128B",
+ "annotation content":"protection(code_mobility,status(mobile),data(mobile))"
+}
+]

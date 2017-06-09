@@ -7,25 +7,29 @@
  *  License: GPLv3 [http://www.gnu.org/licenses/gpl-3.0.html]
  */
 
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
 #include <cstdlib>
 #include <ctime>
+#include <stdexcept>
 
+using namespace std;
+
+#ifdef FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO
 
 // NTL dependencies
 #include "NTLUtils.h"
 #include <iomanip>
 #include <iostream>
 #include <fstream>
-#include <stdexcept>
 #include <boost/io/ios_state.hpp>
 
 NTL_CLIENT
 
-using namespace std;
 using namespace NTL;
+
 
 void dumpArray(ostream& out, const char * input, size_t len){
 	size_t i;
@@ -245,6 +249,8 @@ std::string hashMatrix(mat_GF2 m){
 	std::string inputBuffer = dumpMatrix2str(m, false);
 	return hashString(inputBuffer);
 }
+
+#endif /* FULL_WBC_CODE_SUITE_WITH_DECRYPTION_TOO */
 
 int char2int(char input) {
 	if(input >= '0' && input <= '9')
