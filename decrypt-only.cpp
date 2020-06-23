@@ -53,7 +53,7 @@ int tryMain(int argc, const char * argv[]) {
 
         // input parameters processing
 
-        inTables = "BART.inputfile.tables";
+        inTables = "encrypted.inputfile.tables";
 
         // use external coding ?
         useExternal = true;
@@ -62,7 +62,7 @@ int tryMain(int argc, const char * argv[]) {
         //
         // AES encryption - encrypt input files with table representation
         //
-        std::vector<std::string>  files = { "BART.inputfile.todecode" };
+        std::vector<std::string>  files = { "encrypted.inputfile.todecode" };
         for(std::string file : files){
             std::cout << "Input file " << file << std::endl;
         }

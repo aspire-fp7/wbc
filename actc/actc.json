@@ -25,7 +25,7 @@
     "wbta":                   ["NOT_HERE"],
     "convert_pragmas":        ["NOT_HERE"],
     "wbc":                    "NOT_HERE",
-    "wbc_public":             "/projects/wbc/main",
+    "wbc_public":             "LD_LIBRARY_PATH=/projects/wbc /projects/wbc/main",
     "read_annot":             "/opt/annotation_extractor/readAnnot.sh",
     "data_obfuscate":         "NOT_HERE",
     "client_server_splitter": "NOT_HERE",
@@ -45,8 +45,8 @@
     "accl":                   "/opt/ACCL",
     "ascl":                   "/opt/ASCL",
     "anti_debugging":         "NOT_HERE_YET",
-    "obfuscator":             "/opt/diablo/diablo-obfuscator",
-    "obfuscator_sp":          "/opt/diablo/diablo-selfprofiling",
+    "obfuscator":             "/opt/diablo/bin/diablo-obfuscator",
+    "obfuscator_sp":          "/opt/diablo/bin/diablo-selfprofiling",
     "renewability":           "/opt/renewability"
   },
 
