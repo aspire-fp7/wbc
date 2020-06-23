@@ -1,95 +1,215 @@
-Whitebox-crypto-AES
-===================
-[![Build Status](https://travis-ci.org/ph4r05/Whitebox-crypto-AES.svg?branch=master)](https://travis-ci.org/ph4r05/Whitebox-crypto-AES)
-[![Coverity Status](https://scan.coverity.com/projects/7179/badge.svg)](https://scan.coverity.com/projects/ph4r05-whitebox-crypto-aes)
+# How to set up the renewable WBC example
 
-Whitebox cryptography AES implementation.
+First, this walk-through will explain how to set up your system so that it has a working framework and WBC-based decryption application on your ARM board. The next section will then explain in detail how the renewable aspects of this system work. This code is based on Dusan Klinec's WBC code. The original readme file associated with that repo can be found in `README-Dusan-Klinec.md`.
 
-This repository contains a C++ implementation of:
- * Complete whitebox [AES]-128 scheme introduced by [Chow] et al [2]. Implements/uses input/output encodings, mixing bijections, external encodings.
- * Complete whitebox [AES]-128 scheme introduced by [Karroumi] [3] which uses an idea of dual AES ciphers (using a different generating polynomial for AES cipher) for creating a stronger AES whitebox scheme.
- * Implementation of the [BGE] Attack on [Chow]'s AES whitebox implementation found by [Billet] et al [4]. Attack uses whitebox AES generator to create a random instance of whitebox AES scheme with secret key K embedded in the implementation. The attack then recovers the secret key K from the tables representing the given instance. This BGE attack also breaks scheme proposed by [Karroumi] what I found out while working on my [diploma] thesis.
- 
-The implementation contains:
- * Whitebox AES code generator in both [Chow] and [Karroumi] schemes. It generates a randomized whitebox AES instance with embedded encryption key K which can be used either for encryption or for decryption. Instance can be serialized to a file. 
- * Code for running generated whitebox AES instance for encryption/decryption.
- * BGE key recovery attack on a generated whitebox AES instance.
- * Unit tests.
- 
-You also might be interested in my [Java] implementation of the Chow's whitebox AES scheme.
-In my [diploma] thesis I suggest modifications and improvements for a new whitebox-suited symmetric-key encryption algorithm based on AES.
+## Set up the framework and WBC repositories
 
+This is basically setting up the ASPIRE Framework repo and checking out this repository in the correct location.
 
-[AES]: http://csrc.nist.gov/archive/aes/rijndael/Rijndael-ammended.pdf
-[Chow]: http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.59.7710
-[Karroumi]: http://dl.acm.org/citation.cfm?id=2041060
-[Billet]: http://bo.blackowl.org/s/papers/waes.pdf
-[diploma]: http://is.muni.cz/th/325219/fi_m/thesis.pdf
-[Java]: https://github.com/ph4r05/Whitebox-crypto-AES-java
+    $ git clone https://github.com/aspire-fp7/framework
+    $ cd framework/
+    $ ./setup.sh
+    [...]
+    Would you like to include the anti_debugging protection? (y/N) N
+    $ cd projects/
+    $ git clone https://github.com/aspire-fp7/wbc
+    $ cd wbc
 
-[2]: Stanley Chow, Phil Eisen, Harold Johnson, and Paul C. Van Oorschot. White-box cryptography and an AES implementation. In Proceedings of the Ninth Workshop on Selected Areas in Cryptography (SAC 2002, pages 250–270. Springer-Verlag, 2002.
+## Build the NTL dependency
 
-[3]: Mohamed Karroumi. Protecting white-box AES with dual ciphers. In Proceedings of the 13th international conference on Information security and cryptology, ICISC’10, pages 278–291, Berlin, Heidelberg, 2011. Springer-Verlag. ISBN 978-3-642-24208-3. 
+The next few steps will be automated in the future. For now, you'll need to perform a few manual steps to prepare everything:
 
-[4]: Olivier Billet, Henri Gilbert, and Charaf Ech-Chatbi. Cryptanalysis of a white box AES implementation. In Proceedings of the 11th international conference on Selected Areas in Cryptography, SAC’04, pages 227–240, Berlin, Heidelberg, 2005. Springer-Verlag. ISBN 3-540-24327-5, 978-3-540-24327-4. doi: 10.1007/978-3-540-30564-4_16.
-
-Dependencies
-=======
-* C++0x and higher
-* CMake 2.8+
-* [NTL] 6.0.0+
-* boost_iostreams 1.55+
-* boost_serialization 1.55+
-* boost_program_options 1.55+
-* boost_random 1.55+
-
-Description:
-* [NTL] math library is used for computation in finite fields & algebra. ~~NTL is licensed under GPL thus this implementation also has to be GPL.~~
-* Boost library for serialization of the scheme instance & program input parameters parsing. Version 1.55
+    $ wget https://www.shoup.net/ntl/ntl-10.3.0.tar.gz
+    $ tar zxvf ntl-10.3.0.tar.gz
+    $ cd ntl-10.3.0/src/
+    $ NTL_INSTALL_PREFIX=${PWD}/../install--ntl-diablo-x86-native
+    $ ./configure PREFIX=${NTL_INSTALL_PREFIX} CXX=g++ "CXXFLAGS=-g -O2" SHARED=on
+    $ make
+    $ make install
+    $ cd ../..
 
 
-Building
-=======
-* Travis is configured for the project so in case of any problems please refer to the travis configuration file.
-* Install dependencies. For installing NTL you can use provided scripts `install-ntl.sh` or `install-ntl-cached.sh`
-* Use cmake to build
-```bash
-mkdir build-debug
-cd build-debug
-cmake -DCMAKE_BUILD_TYPE=Debug ..
-make
-```
+## Build the WBC table generator
 
-License
-=======
-Code is published under license: GPLv3 [http://www.gnu.org/licenses/gpl-3.0.html]. This license holds from the first commit.
-I also require to include my copyright header in files if you decide to use my source codes.
+Now we will create the binary that will be run on our host to both create and re-randomize WBC tables, and to encrypt content with those tables.
 
-Using GPL in short means that if you incorporate this source code to your application, it has to be also published under GPLv3. Also if you make any improvement to my source code and you will use improved version you are obliged to publish improved version as well.
+    $ cmake -DBUILD_DECRYPT_ONLY=OFF -DBUILD_MAIN=ON  -DNTL_INCLUDE_PATH=${NTL_INSTALL_PREFIX}/include/ -DNTL_LIB=${NTL_INSTALL_PREFIX}/lib/libntl.so.33   "-DCMAKE_EXE_LINKER_FLAGS=-lgmp -lz" .
+    $ make
 
-If this license does not fit to you, drop me an email, I am sure we can negotiate somehow.
+Because we'll be using this file inside of our ACTC Docker environment, which might have a different version of boost, and needs to refer to the NTL libraries, we copy those to the current directory:
 
-** UPDATE 31.01.2017 **
-<br/>
-[NTL] is now licensed under LGPL v2.1+ so I can relicense the code to LGPL v2.1+ by a written permission.
-So the code is by default GPLv3 licensed, but if you drop me an email I will give you LGPL v2.1+ license.
-I am also free to talk about other licensing options.
+    $ cp ntl-10.3.0/src/.libs/*so* .
+    $ cp /usr/lib/x86_64-linux-gnu/libboost_* .
 
-Donating
-========
+(Once these steps are automated in a Docker, this last step should become obsolete.)
 
-This implementation is an open source. If you like the code or you do find it useful please feel free to donate to the
-author whatever amount you would like by clicking on the paypal button below.
-And if you don't feel like donating, that's OK too.
+## Generate WBC tables on the host
 
-[![](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=XK6RLD768RGGJ&lc=SK&item_name=ph4r05&item_number=Whitebox%2dcrypto%2dAES%2egit&currency_code=EUR&bn=PP%2dDonationsBF%3abtn_donateCC_LG%2egif%3aNonHosted)
+Now we'll use our tool to generate both a binary version and a C header file containing WBC tables:
 
-Bitcoin:
+    $ ./main --decrypt --extEnc=0 --create-table WBTables
+    AES key to use: 2b 7e 15 16 28 ae d2 a6 ab f7 15 88 09 cf 4f 3c 
+    Table output file given: WBTables
+    External coding will be used: 0
+    Generating WB-AES instance (encryption)...
+    Generating WB-AES instance (decryption)...
+    Generating AES tables took: [5] seconds
 
-![1DBr1tfuqv6xphg5rzNTPxqiUbqbRHrM2E](https://deadcode.me/btc-whitebox.png)<br />1DBr1tfuqv6xphg5rzNTPxqiUbqbRHrM2E
+## Create an encrypted file on the host
 
-Contributing
-=======
-If you want to improve my code by extending it to AES-256 or implementing other whitebox AES schemes do not hesitate to submit a pull request. Please also consider it if you find some bug in the code. I am not actively developing this code at the moment but I will review the pull requests. Thanks!
+We can then use the same tool to encrypt `/etc/passwd`:
 
-[NTL]: http://www.shoup.net/ntl/
+    $ ./main --decrypt=0 --extEnc=0 --load-tables WBTables.binary --out-file encrypted.inputfile.todecode --input-files /etc/passwd
+    Output file given: encrypted.inputfile.todecode
+    Table input file given: WBTables.binary
+    Input file /etc/passwd
+    Generating External encoding, identity: 0...
+    Loading stored AES tables: 0
+    Loading AES tables took: [0] seconds
+    Going to encrypt file [/etc/passwd] with WBAES
+    Finished reading the file 
+    Encryption ended in [0]s; Pure encryption took [0.002211] s (clock call); time: [0] s; encrypted [182] blocks
+
+## Create the renewable ARM version of the decryption application
+
+Our decryption application that will be run on the ARM board has only the basic functionality embedded in its main file (`decrypt-only.cpp`), as opposed to the many-featured main file on our host. The decryption functionality is located in `decrypt-fn.cpp`'s `decrypt_fn` function, which basically includes the WBTables.h C header file that was generated by the `./main --create-tables` from the earlier step. This function is furthermore annotated with
+
+      _Pragma("ASPIRE begin protection(publicwbc,renewable)")
+      _Pragma("ASPIRE end")
+
+This indicates to the ACTC that this is renewable WBC.
+
+Now it's time to actually create this decryption application with the ACTC:
+
+    $ ../../docker/run.sh -d -f /projects/wbc/actc/actc.json 
+    [...]
+    APPLICATION ID  = DD828419B231A2BC565199D897832E42
+    .  SERVER_RENEWABILITY_CREATE
+       register_app        /projects/wbc/actc/build/actc/.server_renewability_create
+    
+    /opt/renewability/scripts/create_new_application.sh -a DD828419B231A2BC565199D897832E42 && touch /projects/wbc/actc/build/actc/.server_renewability_create
+    
+    .  SERVER_RENEWABILITY_POLICY
+       set_policy          /projects/wbc/actc/build/actc/.server_renewability_policy
+    
+    /opt/renewability/scripts/set_application_policy.sh -a DD828419B231A2BC565199D897832E42 -d 5 -m 0 -r /projects/wbc/actc/build/actc/BC05/generate_blocks_wbc.sh && touch /projects/wbc/actc/build/actc/.server_renewability_policy
+    [...]
+
+The `DD828419B231A2BC565199D897832E42` is the application id, where we will later verify that the diversified mobile blocks are created into.
+
+## Running the code on the ARM board:
+
+First, copy both the encrypted file and the decryption tool to our ARM board:
+
+    $ scp encrypted.inputfile.todecode ARMboard:
+    $ scp actc/build/actc/BC05/wbc ARMboard:
+
+When running the decryption tool on your ARM board, it will automatically decrypt `encrypted.inputfile.todecode` into `decrypted_file`
+
+    $ ssh ARMboard
+    ARMboard:~$ ./wbc
+    [...debugging output of the online code manager...]
+    Input file encrypted.inputfile.todecode
+    Going to decrypt file [encrypted.inputfile.todecode] with WBAES
+    Finished reading the file 
+    Encryption ended in [0]s; Pure encryption took [0.195877] s (clock call); time: [0] s; encrypted [182] blocks
+    ARMboard:~$ cat decrypted_file 
+    root:x:0:0:root:/root:/bin/bash
+    [...]
+
+# Renewability
+
+We have two different ways in which we can diversify our mobile WBC code. The first one is by diversifying the binary ARM code that is part of the mobile block. This is the default manner in which our mobile blocks are renewed, this is not limited to the WBC code. The second one is by re-randomizing the WBC tables themselves, and sending the updated tables over to the client. Both are orthogonal to each other. This walk-through will illustrate both in the following two subsections.
+
+## Diversifying the surrounding code over time
+
+By default, the renewability manager is instructed to renew (and diversify) blocks every 5 seconds during the execution of the program. This is configurable with the `set_application_policy.sh` script, which is already called with that 5 second default when the project is initially built (as can be seen in the output earlier in this walk-through). Furthermore, the renewability manager can be instructed that a client should acknowledge that it has dropped the code, and this can then be made to interact with the mobility server as a reaction mechanism.
+
+You can easily observe the code diversification as follows. First, prepare a larger file to decrypt on your ARM board, so that it will take more than 5 seconds to decrypt it. (For example, a 100MiB file filled with zeroes might work well, depending on your board.)
+
+On your host, go into your ACTC Docker:
+
+    $ docker-compose exec actc bash
+
+First observe that there is already a first set of mobile blocks (in our case consisting of only a single block) generated, in the directory based on our application's APPLICATION_ID:
+
+    # ls /opt/online_backends/DD828419B231A2BC565199D897832E42/code_mobility/00000000/
+    mobile_dump_00000000  mobile_dump_00000000.metadata  source.txt
+    # md5sum /opt/online_backends/DD828419B231A2BC565199D897832E42/code_mobility/00000000/mobile_dump_00000000
+    76c7625db2a81200b6f3c54a36528d71  /opt/online_backends/DD828419B231A2BC565199D897832E42/code_mobility/00000000/mobile_dump_00000000
+
+The `00000000` indicates the revision of this set of mobile blocks. In this case, there is only our initial set of mobile blocks.
+
+While running your (now long-running) decryption code on your ARM board, you can study different log files on the Docker:
+
+* `/opt/online_backends/code_mobility/mobility_server.log` shows the interactions the code mobility server has with its clients. In doing so, it also logs the path to the mobile block which is served, including its revision.
+* `/opt/online_backends/renewability/renewability_manager.log` shows the interactions the renewability manager has with its clients. This also logs the policies of the active clients, when the manager decides that a new set of revisions should be generated, how these are generated, etc.
+
+By default the client code injected in the ARM applicatien outputs some debug information, that additionally shows when it is instructed to clear its code cache, and fetch new a new set of blocks. Thus, after a while, you can observe:
+
+*On the ARM board*:
+
+    [1592922349:6092] NOTICE: ACCL - Data received from server, invoking the callback                                                                                                                                                 
+    [1592922349:6092] NOTICE: RENEWABILITY callback invoked. 520 520[1592922349:6092] NOTICE: RENEWABILITY callback invoked. type=1                                                                                                   
+    [1592922349:6092] NOTICE: RENEWABILITY RN_RENEW_ALLBLOCKS received                                                                                                                                                                
+    [1592922349:6092] NOTICE: RENEWABILITY all blocks erased
+
+This indicates that the renewability manager instructed this client to clear its code cache, so that it is forced to fetch renewed blocks.
+
+*In the renewability log*:
+
+    [RN_MANAGER] Checking policies for app DD828419B231A2BC565199D897832E42...
+    [RN_MANAGER] * Policy found (revision duration: 5s, mandatory: 1)
+    [RN_MANAGER] ** Renewal needed due to application 'DD828419B231A2BC565199D897832E42' policy (Timeout: 5, Elapsed: 6).
+    [RN_MANAGER] New revision number: 00000001.
+    [RN_MANAGER] Executing renew script: /opt/renewability/scripts/create_new_revision.sh -a DD828419B231A2BC565199D897832E42 -r 00000001 -o /projects/wbc/actc/build/actc/BC05/generate_blocks_wbc.sh -f 1592922314 -t 1592922379
+    [RN_MANAGER] Renew script returned: 0 (0 expected)
+
+This indicates that the renewability manager decided to create a new revision at that point.
+
+*In the code mobility log*:
+
+    [Code Mobility Server] Actual revision for app_id DD828419B231A2BC565199D897832E42 is 00000002
+    [Code Mobility Server] BLOCK_ID 0 requested
+    [Code Mobility Server] BLOCK_ID 0 (filename: /opt/online_backends/DD828419B231A2BC565199D897832E42/code_mobility/00000002/mobile_dump_00000000) is going to be served.
+    [Code Mobility Server] BLOCK_ID 0 is 1196264 bytes long.
+    [Code Mobility Server] BLOCK_ID 0 correctly sent to ASPIRE Portal.
+
+Which shows that the mobile block with id 0 from revision 00000002 was sent to the client.
+
+Finally, you can also observe this in the directories and file which were generated:
+
+    # ls /opt/online_backends/DD828419B231A2BC565199D897832E42/code_mobility/
+    00000000  00000001  00000002  00000003  00000004  00000005
+    # md5sum /opt/online_backends/DD828419B231A2BC565199D897832E42/code_mobility/*/mobile_dump_00000000
+    76c7625db2a81200b6f3c54a36528d71  /opt/online_backends/DD828419B231A2BC565199D897832E42/code_mobility/00000000/mobile_dump_00000000
+    2192c359f30a3d408e5cb09ab277ddfe  /opt/online_backends/DD828419B231A2BC565199D897832E42/code_mobility/00000001/mobile_dump_00000000
+    37e8998a157d2ec9a1e8a88b641d83d0  /opt/online_backends/DD828419B231A2BC565199D897832E42/code_mobility/00000002/mobile_dump_00000000
+    1bc42280b0fc352352fff82a7b28aa4c  /opt/online_backends/DD828419B231A2BC565199D897832E42/code_mobility/00000003/mobile_dump_00000000
+    00603adb7936895fec569197ad944dbf  /opt/online_backends/DD828419B231A2BC565199D897832E42/code_mobility/00000004/mobile_dump_00000000
+    bf340ea2f62d55e3af527d38749fa287  /opt/online_backends/DD828419B231A2BC565199D897832E42/code_mobility/00000005/mobile_dump_00000000
+
+Which shows that the contents of those blocks changes between the sets.
+
+## Diversifying the WBC Tables
+
+We also support re-randomizing the WBC tables, and then updating the mobile blocks associated with the WBC tables, so that those re-randomized blocks are sent to the client. This is *orthogonal* to diversifying the code itself. Thus, we can choose to only diversify the code (the default), only diversify the WBC tables, or even both. This explanation will focus on diversifying the WBC table.
+
+Our framework automatically generates a script (partially based on the ACTC config, of course) you can call to regenerate the tables. The script is named after the object file in which the table is located. Thus, in our case, the script can be found as `/projects/wbc/actc/build/actc/SC12_R/renew_decrypt-fn.sh`. It takes only a single argument, which is the directory in which the mobile WBC block is located that needs to be updated. (You could have multiple mobile WBC Tables, they can be updated independently, a specfic script will automatically patch only the block which belongs to the object file for which that script was generated.)
+
+By default, the mobile code of set 00000000 will be sent to a client. Thus, to re-randomize that WBC table (and showing that it has indeed changed):
+
+    # md5sum /opt/online_backends/DD828419B231A2BC565199D897832E42/code_mobility/00000000/mobile_dump_00000000
+    76c7625db2a81200b6f3c54a36528d71  /opt/online_backends/DD828419B231A2BC565199D897832E42/code_mobility/00000000/mobile_dump_00000000
+
+    # /projects/wbc/actc/build/actc/SC12_R/renew_decrypt-fn.sh /opt/online_backends/DD828419B231A2BC565199D897832E42/code_mobility/00000000/
+    AES key to use: 2b 7e 15 16 28 ae d2 a6 ab f7 15 88 09 cf 4f 3c 
+    Table output file given: WBTables
+    [...]
+
+    # md5sum /opt/online_backends/DD828419B231A2BC565199D897832E42/code_mobility/00000000/mobile_dump_00000000
+    00fa4d60bc17f0ce09a4da6e19d9d13d  /opt/online_backends/DD828419B231A2BC565199D897832E42/code_mobility/00000000/mobile_dump_00000000
+
+The script will automatically compile the updated table, and inject that table in the pre-existing associated mobile block. Running the wbc decryption code on your ARM board will automatically use this new table  (you can check this in the output of the code mobility server), and the output of the decryption will still be correct.
+
+If you want to automatically update the WBC tables together with the diversification of its code during the execution of a program, you can do this by editing the renewability script for the application to suit your exact needs. This script renewability is registered by the `set_application_policy.sh` script as `/projects/wbc/actc/build/actc/BC05/generate_blocks_wbc.sh`.
